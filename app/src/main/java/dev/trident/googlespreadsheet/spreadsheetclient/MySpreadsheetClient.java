@@ -3,6 +3,7 @@ package dev.trident.googlespreadsheet.spreadsheetclient;
 import com.pras.SpreadSheetFactory;
 
 import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetClientPrepareCallback;
+import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetCreateCallback;
 import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetListCallback;
 
 /**
@@ -28,8 +29,13 @@ public class MySpreadsheetClient {
         Runnable getSpreadsheetFactoryRunnable = new Runnable() {
             @Override
             public void run() {
-                factory = SpreadSheetFactory.getInstance(authenticator);
-                callback.onPrepared();
+                try {
+                    factory = SpreadSheetFactory.getInstance(authenticator);
+                    callback.onPrepared();
+                } catch (Exception e){
+                    callback.onError(e.getMessage());
+                }
+
             }
         };
         doInBackground(getSpreadsheetFactoryRunnable);
@@ -42,7 +48,29 @@ public class MySpreadsheetClient {
         Runnable getSpreadsheetsRunnable = new Runnable() {
             @Override
             public void run() {
-                callback.onResult(factory.getAllSpreadSheets());
+                try {
+                    callback.onResult(factory.getAllSpreadSheets());
+                } catch (Exception e){
+                    callback.onError(e.getMessage());
+                }
+
+            }
+        };
+        doInBackground(getSpreadsheetsRunnable);
+    }
+
+    public void createSpreadsheet(final String name,final SpreadsheetCreateCallback callback)
+    {
+        Runnable getSpreadsheetsRunnable = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    factory.createSpreadSheet(name);
+                    callback.onCreated(name);
+                } catch (Exception e){
+                    callback.onError(e.getMessage());
+                }
+
             }
         };
         doInBackground(getSpreadsheetsRunnable);

@@ -16,12 +16,14 @@ import java.util.ArrayList;
 import dev.trident.googlespreadsheet.spreadsheetclient.AndroidAuthenticator;
 import dev.trident.googlespreadsheet.spreadsheetclient.MySpreadsheetClient;
 import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetClientPrepareCallback;
+import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetCreateCallback;
 import dev.trident.googlespreadsheet.spreadsheetclient.callback.SpreadsheetListCallback;
 
 public class MainActivity extends AppCompatActivity {
 
     AccountManager manager;
     private final String TAG = "MainActivity";
+    String mSpreadsheetName = "sheet"+System.currentTimeMillis();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,28 +60,53 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPrepared() {
 
-                // the callback will return the  list of the spreadsheets
-                //
-                MySpreadsheetClient.getInstance().getSpreadsheets(new SpreadsheetListCallback() {
+                // create the new spreadsheet
+                MySpreadsheetClient.getInstance().createSpreadsheet(mSpreadsheetName, new SpreadsheetCreateCallback() {
                     @Override
-                    public void onResult(ArrayList<SpreadSheet> spreadSheets) {
-                        for (SpreadSheet spreadSheet:spreadSheets)
-                        {
-                            //display the list of the spreadsheets
-                            Log.d(TAG,spreadSheet.getTitle());
-                        }
-                        // you can view the example of usage the code in WorkWithSpreadsheetExample asyncTask
-                        WorkWithSpreadsheetExample example = new WorkWithSpreadsheetExample(spreadSheets.get(0));
-                        example.execute();
+                    public void onCreated(String name) {
+                        Log.d(TAG, "spreadsheet " + name + " successfully created");
+                        //once spreadsheet created, get the list of the spreadsheets and select required one to perform actions
+                        MySpreadsheetClient.getInstance().getSpreadsheets(new SpreadsheetListCallback() {
+                            @Override
+                            public void onError(String message) {
+                                Log.e(TAG, message);
+                            }
+
+                            @Override
+                            public void onResult(ArrayList<SpreadSheet> spreadSheets) {
+                                SpreadSheet createdSpreadsheet = null;
+                                for (SpreadSheet spreadSheet : spreadSheets) {
+                                    //display the list of the spreadsheets
+                                    Log.d(TAG, spreadSheet.getTitle());
+                                    if (spreadSheet.getTitle().equals(mSpreadsheetName))
+                                        createdSpreadsheet = spreadSheet;
+                                }
+                                if (createdSpreadsheet != null) {
+                                    Log.d(TAG, "found the spreadsheet");
+                                    // you can view the example of usage the code in WorkWithSpreadsheetExample asyncTask
+                                    WorkWithSpreadsheetExample example = new WorkWithSpreadsheetExample(createdSpreadsheet);
+                                    example.execute();
+                                }
+
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Log.e(TAG, "spreadsheet wasn't  created");
                     }
                 });
+
             }
 
             @Override
-            public void onPrepareError() {
-
+            public void onError(String message) {
+                Log.e(TAG, message);
             }
         });
     }
+
 
 }
